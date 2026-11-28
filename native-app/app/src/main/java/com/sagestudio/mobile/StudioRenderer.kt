@@ -32,6 +32,8 @@ class StudioRenderer : GLSurfaceView.Renderer {
     private var yaw = 0f
     private var pitch = 0.45f
     private var cameraDistance = 12f
+    private var surfaceWidth = 1
+    private var surfaceHeight = 1
     private var program = 0
     private val projection = FloatArray(16)
     private val view = FloatArray(16)
@@ -59,6 +61,8 @@ class StudioRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceChanged(gl: GL10?, w: Int, h: Int) {
+        surfaceWidth = w.coerceAtLeast(1)
+        surfaceHeight = h.coerceAtLeast(1)
         GLES20.glViewport(0, 0, w, h.coerceAtLeast(1))
         Matrix.perspectiveM(projection, 0, 48f, w.toFloat() / h.coerceAtLeast(1), 0.1f, 200f)
     }
@@ -121,6 +125,75 @@ class StudioRenderer : GLSurfaceView.Renderer {
     fun selectNext() {
         if (parts.isNotEmpty()) selected = (selected + 1) % parts.size
     }
+
+    fun selectAt(screenX: Float, screenY: Float): Boolean {
+        val eyeX = sin(yaw) * cos(pitch) * cameraDistance
+        val eyeY = sin(pitch) * cameraDistance
+        val eyeZ = cos(yaw) * cos(pitch) * cameraDistance
+        val forward = normalize(floatArrayOf(-eyeX, -eyeY, -eyeZ))
+        val right = normalize(cross(forward, floatArrayOf(0f, 1f, 0f)))
+        val cameraUp = normalize(cross(right, forward))
+        val nx = (2f * screenX / surfaceWidth) - 1f
+        val ny = 1f - (2f * screenY / surfaceHeight)
+        val tangent = kotlin.math.tan(Math.toRadians(24.0)).toFloat()
+        val aspect = surfaceWidth.toFloat() / surfaceHeight.toFloat()
+        val direction = normalize(floatArrayOf(
+            forward[0] + right[0] * nx * tangent * aspect + cameraUp[0] * ny * tangent,
+            forward[1] + right[1] * nx * tangent * aspect + cameraUp[1] * ny * tangent,
+            forward[2] + right[2] * nx * tangent * aspect + cameraUp[2] * ny * tangent
+        ))
+        var nearest = Float.POSITIVE_INFINITY
+        var hitIndex = -1
+        parts.forEachIndexed { index, part ->
+            val dx = eyeX - part.x
+            val dy = eyeY - part.y
+            val dz = eyeZ - part.z
+            val angle = Math.toRadians(part.rotation.toDouble()).toFloat()
+            val c = cos(angle)
+            val s = sin(angle)
+            val localOrigin = floatArrayOf(c * dx - s * dz, dy, s * dx + c * dz)
+            val localDirection = floatArrayOf(
+                c * direction[0] - s * direction[2],
+                direction[1],
+                s * direction[0] + c * direction[2]
+            )
+            val t = rayBox(localOrigin, localDirection, part.sx, part.sy, part.sz)
+            if (t != null && t < nearest) { nearest = t; hitIndex = index }
+        }
+        if (hitIndex >= 0) { selected = hitIndex; return true }
+        return false
+    }
+
+    private fun rayBox(o: FloatArray, d: FloatArray, sx: Float, sy: Float, sz: Float): Float? {
+        val half = floatArrayOf(sx, sy, sz)
+        var near = Float.NEGATIVE_INFINITY
+        var far = Float.POSITIVE_INFINITY
+        for (axis in 0..2) {
+            if (kotlin.math.abs(d[axis]) < 0.00001f) {
+                if (o[axis] < -half[axis] || o[axis] > half[axis]) return null
+            } else {
+                var t1 = (-half[axis] - o[axis]) / d[axis]
+                var t2 = (half[axis] - o[axis]) / d[axis]
+                if (t1 > t2) { val temp = t1; t1 = t2; t2 = temp }
+                near = maxOf(near, t1)
+                far = minOf(far, t2)
+                if (near > far) return null
+            }
+        }
+        if (far < 0f) return null
+        return if (near >= 0f) near else far
+    }
+
+    private fun normalize(v: FloatArray): FloatArray {
+        val length = kotlin.math.sqrt(v.sumOf { (it * it).toDouble() }).toFloat().coerceAtLeast(0.00001f)
+        return floatArrayOf(v[0] / length, v[1] / length, v[2] / length)
+    }
+
+    private fun cross(a: FloatArray, b: FloatArray) = floatArrayOf(
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0]
+    )
 
     fun transformSelected(mode: String, dx: Float, dy: Float) {
         val part = parts.getOrNull(selected) ?: return
