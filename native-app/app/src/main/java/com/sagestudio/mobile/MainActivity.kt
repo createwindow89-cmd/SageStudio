@@ -55,9 +55,13 @@ class MainActivity : Activity() {
             setBackgroundColor(0x990C0F16.toInt())
         }
         body.addView(hint, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.START))
+        val joystick = CameraJoystick(this) { x, y -> viewport.cameraJoystick(x, y) }
+        body.addView(joystick, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.START).apply {
+            setMargins(14, 0, 0, 18)
+        })
         root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
         val footer = TextView(this).apply {
-            text = "SageStudio 0.2.0  |  Native 3D editor"
+            text = "SageStudio 0.3.0  |  Native 3D editor"
             setTextColor(Color.rgb(155, 165, 180)); textSize = 10f
             setPadding(12, 7, 12, 7); setBackgroundColor(panelColor)
         }
