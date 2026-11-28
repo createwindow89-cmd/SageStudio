@@ -28,6 +28,7 @@ class StudioViewport(context: Context) : GLSurfaceView(context) {
     fun duplicateSelected() = queueEvent { sceneRenderer.duplicateSelected() }
     fun deleteSelected() = queueEvent { sceneRenderer.deleteSelected() }
     fun selectNext() = queueEvent { sceneRenderer.selectNext() }
+    fun selectPart(index: Int) = queueEvent { sceneRenderer.selectPart(index) }
     fun showParts(callback: (List<String>) -> Unit) {
         queueEvent { val items = sceneRenderer.listParts(); post { callback(items) } }
     }
@@ -36,7 +37,7 @@ class StudioViewport(context: Context) : GLSurfaceView(context) {
     }
     fun updateSelected(info: PartInfo) = queueEvent {
         sceneRenderer.updateSelected(info.name, info.x, info.y, info.z,
-            info.sx, info.sy, info.sz, info.rotation)
+            info.sx, info.sy, info.sz, info.rotation, info.colorHex)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
