@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.FrameLayout
 import android.widget.Toast
+import android.widget.ScrollView
 
 class MainActivity : Activity() {
     private lateinit var viewport: StudioViewport
@@ -98,11 +99,15 @@ class MainActivity : Activity() {
 
     private fun showExplorer() {
         viewport.showParts { names ->
-            AlertDialog.Builder(this).setTitle("Explorer  •  Workspace")
-                .setItems(names.toTypedArray()) { _, which ->
-                    repeat(which + 1) { viewport.selectNext() }
+            val rows = names.map { "Workspace  /  " + it }
+            AlertDialog.Builder(this)
+                .setTitle("Explorer  •  Workspace (" + names.size + " objects)")
+                .setItems(rows.toTypedArray()) { _, which ->
+                    viewport.selectPart(which)
+                    toast("Selected " + names[which].removePrefix("▶ "))
                 }
-                .setPositiveButton("Close", null).show()
+                .setPositiveButton("Close", null)
+                .show()
         }
     }
 
@@ -113,38 +118,49 @@ class MainActivity : Activity() {
                 "Name" to info.name, "Position X" to info.x.toString(),
                 "Position Y" to info.y.toString(), "Position Z" to info.z.toString(),
                 "Size X" to info.sx.toString(), "Size Y" to info.sy.toString(),
-                "Size Z" to info.sz.toString(), "Rotation Y" to info.rotation.toString()
+                "Size Z" to info.sz.toString(), "Rotation Y" to info.rotation.toString(),
+                "Color (HEX)" to info.colorHex
             )
             val container = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; setPadding(20, 8, 20, 4)
+                orientation = LinearLayout.VERTICAL
+                setPadding(20, 8, 20, 4)
             }
             val inputs = fields.map { (label, value) ->
                 val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
                 val caption = TextView(this).apply {
-                    text = label; setTextColor(textColor); textSize = 12f
+                    text = label
+                    setTextColor(textColor)
+                    textSize = 12f
                 }
                 val edit = EditText(this).apply {
-                    setText(value); setTextColor(textColor); textSize = 14f
+                    setText(value)
+                    setTextColor(textColor)
+                    textSize = 14f
                     setSingleLine(true)
+                    if (label == "Color (HEX)") hint = "#RRGGBB"
                 }
-                row.addView(caption); row.addView(edit)
+                row.addView(caption)
+                row.addView(edit)
                 container.addView(row)
                 edit
             }
-            AlertDialog.Builder(this).setTitle("Properties  •  ${info.name}")
-                .setView(container)
+            val scroll = ScrollView(this).apply { addView(container) }
+            AlertDialog.Builder(this).setTitle("Properties  •  " + info.name)
+                .setView(scroll)
                 .setPositiveButton("Apply") { _, _ ->
-                    fun number(index: Int, fallback: Float) = inputs[index].text.toString().toFloatOrNull() ?: fallback
+                    fun number(index: Int, fallback: Float) =
+                        inputs[index].text.toString().toFloatOrNull() ?: fallback
                     val updated = PartInfo(
                         inputs[0].text.toString(),
                         number(1, info.x), number(2, info.y), number(3, info.z),
                         number(4, info.sx), number(5, info.sy), number(6, info.sz),
-                        number(7, info.rotation)
+                        number(7, info.rotation), inputs[8].text.toString()
                     )
                     viewport.updateSelected(updated)
                     toast("Properties updated")
                 }
-                .setNegativeButton("Cancel", null).show()
+                .setNegativeButton("Cancel", null)
+                .show()
         }
     }
 
