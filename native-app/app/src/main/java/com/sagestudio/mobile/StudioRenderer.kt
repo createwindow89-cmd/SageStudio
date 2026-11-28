@@ -1,7 +1,6 @@
 package com.sagestudio.mobile
 
 import android.graphics.Color
-import android.graphics.Color
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
@@ -135,9 +134,7 @@ class StudioRenderer : GLSurfaceView.Renderer {
         if (index in parts.indices) selected = index
     }
 
-    fun selectPart(index: Int) {
-        if (index in parts.indices) selected = index
-    }
+
 
     fun selectAt(screenX: Float, screenY: Float): Boolean {
         val eyeX = sin(yaw) * cos(pitch) * cameraDistance
