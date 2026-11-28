@@ -1,5 +1,6 @@
 package com.sagestudio.mobile
 
+import android.graphics.Color
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
@@ -15,7 +16,8 @@ data class PartInfo(
     val name: String,
     val x: Float, val y: Float, val z: Float,
     val sx: Float, val sy: Float, val sz: Float,
-    val rotation: Float
+    val rotation: Float,
+    val colorHex: String = "#2E94F2"
 )
 
 class StudioRenderer : GLSurfaceView.Renderer {
@@ -23,7 +25,8 @@ class StudioRenderer : GLSurfaceView.Renderer {
         var name: String,
         var x: Float, var y: Float, var z: Float,
         var sx: Float = 1f, var sy: Float = 1f, var sz: Float = 1f,
-        var rotation: Float = 0f
+        var rotation: Float = 0f,
+        var colorHex: String = "#2E94F2"
     )
 
     private val parts = mutableListOf(Part("Part", 0f, 0f, 0f))
@@ -86,9 +89,10 @@ class StudioRenderer : GLSurfaceView.Renderer {
             Matrix.rotateM(model, 0, part.rotation, 0f, 1f, 0f)
             Matrix.scaleM(model, 0, part.sx, part.sy, part.sz)
             Matrix.multiplyMM(mvp, 0, vp, 0, model, 0)
+            val base = runCatching { Color.parseColor(part.colorHex) }.getOrDefault(Color.rgb(46, 148, 242))
             val color = if (index == selected)
                 floatArrayOf(1f, 0.58f, 0.16f, 1f)
-            else floatArrayOf(0.18f, 0.58f, 0.95f, 1f)
+            else floatArrayOf(Color.red(base) / 255f, Color.green(base) / 255f, Color.blue(base) / 255f, 1f)
             draw(cube, GLES20.GL_TRIANGLES, color, mvp, 1f)
         }
     }
@@ -124,6 +128,10 @@ class StudioRenderer : GLSurfaceView.Renderer {
 
     fun selectNext() {
         if (parts.isNotEmpty()) selected = (selected + 1) % parts.size
+    }
+
+    fun selectPart(index: Int) {
+        if (index in parts.indices) selected = index
     }
 
     fun selectAt(screenX: Float, screenY: Float): Boolean {
@@ -216,11 +224,11 @@ class StudioRenderer : GLSurfaceView.Renderer {
     }
 
     fun selectedInfo(): PartInfo? = parts.getOrNull(selected)?.let {
-        PartInfo(it.name, it.x, it.y, it.z, it.sx, it.sy, it.sz, it.rotation)
+        PartInfo(it.name, it.x, it.y, it.z, it.sx, it.sy, it.sz, it.rotation, it.colorHex)
     }
 
     fun updateSelected(name: String, x: Float, y: Float, z: Float,
-                       sx: Float, sy: Float, sz: Float, rotation: Float) {
+                       sx: Float, sy: Float, sz: Float, rotation: Float, colorHex: String = "#2E94F2") {
         val p = parts.getOrNull(selected) ?: return
         p.name = name.ifBlank { p.name }
         p.x = x; p.y = y; p.z = z
@@ -228,6 +236,7 @@ class StudioRenderer : GLSurfaceView.Renderer {
         p.sy = sy.coerceIn(0.2f, 8f)
         p.sz = sz.coerceIn(0.2f, 8f)
         p.rotation = rotation
+        p.colorHex = if (runCatching { Color.parseColor(colorHex) }.isSuccess) colorHex else p.colorHex
     }
 
     private fun draw(data: FloatBuffer, mode: Int, color: FloatArray, matrix: FloatArray, lineWidth: Float) {
