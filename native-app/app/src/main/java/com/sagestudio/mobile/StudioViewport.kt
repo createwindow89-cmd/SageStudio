@@ -23,6 +23,7 @@ class StudioViewport(context: Context) : GLSurfaceView(context) {
         isFocusable = true
     }
 
+    fun cameraJoystick(x: Float, y: Float) = queueEvent { sceneRenderer.orbit(x * 1.8f, y * 1.8f) }
     fun addCube() = queueEvent { sceneRenderer.addCube() }
     fun duplicateSelected() = queueEvent { sceneRenderer.duplicateSelected() }
     fun deleteSelected() = queueEvent { sceneRenderer.deleteSelected() }
