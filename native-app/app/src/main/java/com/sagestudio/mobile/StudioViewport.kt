@@ -73,7 +73,7 @@ class StudioViewport(context: Context) : GLSurfaceView(context) {
             }
             MotionEvent.ACTION_POINTER_UP -> { previousDistance = 0f; return true }
             MotionEvent.ACTION_UP -> {
-                if (!moved && activeTool == "Select") queueEvent { sceneRenderer.selectNext() }
+                if (!moved && activeTool == "Select") queueEvent { sceneRenderer.selectAt(event.x, event.y) }
                 previousDistance = 0f
                 return true
             }
