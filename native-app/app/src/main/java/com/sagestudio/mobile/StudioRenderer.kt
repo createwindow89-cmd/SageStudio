@@ -1,6 +1,7 @@
 package com.sagestudio.mobile
 
 import android.graphics.Color
+import android.graphics.Color
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
@@ -128,6 +129,10 @@ class StudioRenderer : GLSurfaceView.Renderer {
 
     fun selectNext() {
         if (parts.isNotEmpty()) selected = (selected + 1) % parts.size
+    }
+
+    fun selectPart(index: Int) {
+        if (index in parts.indices) selected = index
     }
 
     fun selectPart(index: Int) {
